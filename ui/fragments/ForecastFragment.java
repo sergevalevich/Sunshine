@@ -5,6 +5,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -26,13 +30,13 @@ import com.valevich.sunshine.R;
 import com.valevich.sunshine.forecast.DayInfo;
 import com.valevich.sunshine.forecast.Forecast;
 import com.valevich.sunshine.ui.activities.DetailActivity;
+import com.valevich.sunshine.ui.activities.SettingsActivity;
 import com.valevich.sunshine.ui.dialogs.AlertDialogFragment;
 
 import org.json.JSONException;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import butterknife.Bind;
@@ -44,16 +48,17 @@ import butterknife.ButterKnife;
 public class ForecastFragment extends Fragment {
 
     private static final String TAG = ForecastFragment.class.getSimpleName();
-    private OkHttpClient mOkHttpClient;
+    private OkHttpClient mOkHttpClient = new OkHttpClient();
     private ArrayAdapter<String> mListAdapter;
     @Bind(R.id.listview_forecast)
     ListView mWeatherList;
+    @Bind(R.id.main_toolbar)
+    Toolbar mToolbar;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
-        mOkHttpClient = new OkHttpClient();
     }
 
     @Nullable
@@ -61,14 +66,23 @@ public class ForecastFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
         ButterKnife.bind(this, rootView);
+        setupActionBar();
         setupListView();
 
-        getWeather("Minsk"); //new thread starts
 
-        return rootView;    //background thread still running after return
+         //new thread starts
+        //background thread still running after return
+        return rootView;
     }
 
-    private void getWeather(String city) {
+    @Override
+    public void onStart() {
+        super.onStart();
+        getWeather();
+    }
+
+    private void getWeather() {
+        String city = getPreference(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
         String format = "json";
         String units = "metric";
         String numDays = "7";
@@ -143,16 +157,49 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
         switch (id) {
             case R.id.action_refresh:
-                getWeather("Moscow");
+                getWeather();
+                return true;
+            case R.id.action_settings:
+                navigateToSettings();
+                return true;
+            case R.id.action_view_location:
+                viewLocation();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    private void viewLocation() {
+        String city = getPreference(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
+        Uri mapUri = Uri.parse("geo:0,0?q=" + city);
+        Intent viewMapIntent = new Intent(Intent.ACTION_VIEW,mapUri);
+        //viewMapIntent.setPackage("com.google.android.apps.maps");
+        if(viewMapIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+            startActivity(viewMapIntent);
+        } else {
+            Toast.makeText(getContext(), R.string.maps_open_error_message,Toast.LENGTH_LONG).show();
+        }
+
+    }
+
     private void alertUserAboutError() {
         AlertDialogFragment dialog = new AlertDialogFragment();
         dialog.show(getActivity().getFragmentManager(), "error_dialog");
+    }
+
+    private void setupActionBar() {
+        AppCompatActivity appCompatActivity = (AppCompatActivity) getActivity();
+        appCompatActivity.setSupportActionBar(mToolbar);
+        ActionBar actionBar = appCompatActivity.getSupportActionBar();
+        if(actionBar != null) {
+            actionBar.setIcon(R.mipmap.ic_launcher);
+        }
+    }
+
+    private void navigateToSettings() {
+        Intent intent = new Intent(getContext(), SettingsActivity.class);
+        startActivity(intent);
     }
 
 
@@ -167,7 +214,10 @@ public class ForecastFragment extends Fragment {
         for(DayInfo dayInfo:forecast.getDayInfo()) {
             String day = dayInfo.getReadableDate();
             String description = dayInfo.getWeather().get(0).getDescription();
-            String highLow = dayInfo.getTemp().getFormattedHighLows();
+
+            String highLow = dayInfo
+                    .getTemp()
+                    .getFormattedHighLowsByUnits(getPreference(getString(R.string.pref_units_key),getString(R.string.pref_units_default)));
             String dayData = day + " " + description + " " + highLow;
             weatherData.add(dayData);
         }
@@ -175,20 +225,17 @@ public class ForecastFragment extends Fragment {
         return weatherData;
     }
 
+    private String getPreference(String preferenceKey, String defaultValue) {
+            return PreferenceManager
+                    .getDefaultSharedPreferences(getContext())
+                    .getString(preferenceKey,defaultValue);
+    }
+
     private void setupListView() {
-        String[] daysArray = {"Monday"
-                , "Tuesday"
-                , "Wednesday"
-                , "Thursday"
-                , "Friday"
-                , "Saturday"
-                , "Sunday"
-        };
-        List<String> days = new ArrayList<>(Arrays.asList(daysArray));
         mListAdapter = new ArrayAdapter<>(getActivity(),
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textView,
-                days);
+                new ArrayList<String>());
         mWeatherList.setAdapter(mListAdapter);
         mWeatherList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
