@@ -81,7 +81,7 @@ public class ForecastFragment extends Fragment {
         getWeather();
     }
 
-    private void getWeather() {
+    private void getWeather() {//ifisnetworkavailable//default location - user location
         String city = getPreference(getString(R.string.pref_location_key),getString(R.string.pref_location_default));
         String format = "json";
         String units = "metric";
@@ -135,6 +135,11 @@ public class ForecastFragment extends Fragment {
         });
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG,"onPause");
+    }
 
     private void updateWeatherListContent(List<String> weatherData) {
 

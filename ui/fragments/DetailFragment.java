@@ -107,7 +107,7 @@ public class DetailFragment extends Fragment {
         appCompatActivity.setSupportActionBar(mToolbar);
         ActionBar actionBar = appCompatActivity.getSupportActionBar();
         if(actionBar != null) {
-            actionBar.setIcon(R.mipmap.ic_launcher);
+            actionBar.setDisplayShowTitleEnabled(false);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
     }
