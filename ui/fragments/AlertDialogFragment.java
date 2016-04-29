@@ -1,4 +1,4 @@
-package com.valevich.sunshine.ui.dialogs;
+package com.valevich.sunshine.ui.fragments;
 
 import android.app.AlertDialog;
 import android.app.Dialog;

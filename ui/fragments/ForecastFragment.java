@@ -31,7 +31,6 @@ import com.valevich.sunshine.forecast.DayInfo;
 import com.valevich.sunshine.forecast.Forecast;
 import com.valevich.sunshine.ui.activities.DetailActivity;
 import com.valevich.sunshine.ui.activities.SettingsActivity;
-import com.valevich.sunshine.ui.dialogs.AlertDialogFragment;
 
 import org.json.JSONException;
 
